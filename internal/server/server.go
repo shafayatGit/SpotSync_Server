@@ -5,8 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"spotsync/internal/auth"
 	"spotsync/internal/config"
+	"spotsync/internal/domain/user"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"gorm.io/driver/postgres"
@@ -19,11 +22,23 @@ type Server struct {
 	Cfg  *config.Config
 }
 
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	return cv.validator.Struct(i)
+}
+
 // NewServer initializes the database connection, GORM configuration, and Echo server.
 func NewServer(cfg *config.Config) *Server {
 	// 1. Initialize database connection
 	log.Printf("Connecting to database...")
-	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{})
+	// We use PreferSimpleProtocol: true to prevent Neon connection pooler (PgBouncer) issues with GORM migrations.
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  cfg.DSN,
+		PreferSimpleProtocol: true,
+	}), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -38,8 +53,18 @@ func NewServer(cfg *config.Config) *Server {
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
+	// Run migrations
+	log.Println("Running database migrations...")
+	if err := db.AutoMigrate(&user.User{}); err != nil {
+		log.Fatalf("Database migration failed: %v", err)
+	}
+	log.Println("Database migrations completed successfully.")
+
 	// 2. Initialize Echo
 	e := echo.New()
+
+	// Setup custom validation
+	e.Validator = &CustomValidator{validator: validator.New()}
 
 	// Middleware
 	e.Use(middleware.Logger())
@@ -56,6 +81,12 @@ func NewServer(cfg *config.Config) *Server {
 			},
 		})
 	})
+
+	// 4. Initialize Core Services
+	jwtService := auth.NewJWTService(cfg.JWTSecret)
+
+	// 5. Register Routes (Module-level Dependency Injection)
+	user.RegisterRoutes(e, db, jwtService)
 
 	return &Server{
 		Echo: e,
