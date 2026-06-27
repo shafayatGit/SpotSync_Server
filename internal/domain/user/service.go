@@ -10,7 +10,7 @@ import (
 )
 
 type UserService interface {
-	Register(req *dto.RegisterRequest) (*dto.RegisterResponse, error)
+	Register(req *dto.RegisterRequest) (*dto.UserResponse, error)
 	Login(req *dto.LoginRequest) (*dto.LoginResponse, error)
 	GetProfile(userID uint) (*dto.UserResponse, error)
 	RefreshToken(userID uint, role string) (string, error)
@@ -28,7 +28,7 @@ func NewUserService(repo UserRepository, jwtService auth.JWTService) UserService
 	}
 }
 
-func (s *userService) Register(req *dto.RegisterRequest) (*dto.RegisterResponse, error) {
+func (s *userService) Register(req *dto.RegisterRequest) (*dto.UserResponse, error) {
 	// Check if email already exists
 	existing, err := s.repo.FindByEmail(req.Email)
 	if err == nil && existing != nil {
@@ -57,27 +57,13 @@ func (s *userService) Register(req *dto.RegisterRequest) (*dto.RegisterResponse,
 		return nil, err
 	}
 
-	// Generate tokens on registration
-	accessToken, err := s.jwtService.GenerateAccessToken(user.ID, user.Role)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshToken, err := s.jwtService.GenerateRefreshToken(user.ID, user.Role)
-	if err != nil {
-		return nil, err
-	}
-
-	return &dto.RegisterResponse{
-		ID:           user.ID,
-		Name:         user.Name,
-		Email:        user.Email,
-		Role:         user.Role,
-		CreatedAt:    user.CreatedAt,
-		UpdatedAt:    user.UpdatedAt,
-		Token:        accessToken,
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+	return &dto.UserResponse{
+		ID:        user.ID,
+		Name:      user.Name,
+		Email:     user.Email,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}, nil
 }
 
@@ -95,21 +81,14 @@ func (s *userService) Login(req *dto.LoginRequest) (*dto.LoginResponse, error) {
 		return nil, errors.New("invalid email or password")
 	}
 
-	// Generate tokens on login
-	accessToken, err := s.jwtService.GenerateAccessToken(user.ID, user.Role)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshToken, err := s.jwtService.GenerateRefreshToken(user.ID, user.Role)
+	// Generate JWT Token
+	token, err := s.jwtService.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dto.LoginResponse{
-		Token:        accessToken,
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+		Token: token,
 		User: dto.UserResponse{
 			ID:        user.ID,
 			Name:      user.Name,
@@ -144,6 +123,6 @@ func (s *userService) RefreshToken(userID uint, role string) (string, error) {
 		return "", err
 	}
 
-	// Generate new access token
-	return s.jwtService.GenerateAccessToken(userID, role)
+	// Generate new JWT Token
+	return s.jwtService.GenerateToken(userID, role)
 }

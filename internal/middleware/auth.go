@@ -24,7 +24,15 @@ func AuthMiddleware(jwtService auth.JWTService) echo.MiddlewareFunc {
 				}
 			}
 
-			// 2. If not found, try to get from "access_token" cookie
+			// 2. If not found in header, try to get from "token" cookie
+			if tokenStr == "" {
+				cookie, err := c.Cookie("token")
+				if err == nil {
+					tokenStr = cookie.Value
+				}
+			}
+
+			// 3. Fallback: try "access_token" cookie
 			if tokenStr == "" {
 				cookie, err := c.Cookie("access_token")
 				if err == nil {

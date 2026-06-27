@@ -43,28 +43,6 @@ func (h *UserHandler) Register(c echo.Context) error {
 		})
 	}
 
-	// Set access token cookie
-	accessCookie := &http.Cookie{
-		Name:     "access_token",
-		Value:    res.AccessToken,
-		Expires:  time.Now().Add(15 * time.Minute),
-		HttpOnly: true,
-		Path:     "/",
-		SameSite: http.SameSiteLaxMode,
-	}
-	c.SetCookie(accessCookie)
-
-	// Set refresh token cookie
-	refreshCookie := &http.Cookie{
-		Name:     "refresh_token",
-		Value:    res.RefreshToken,
-		Expires:  time.Now().Add(7 * 24 * time.Hour),
-		HttpOnly: true,
-		Path:     "/",
-		SameSite: http.SameSiteLaxMode,
-	}
-	c.SetCookie(refreshCookie)
-
 	return c.JSON(http.StatusCreated, map[string]interface{}{
 		"success": true,
 		"message": "User registered successfully",
@@ -98,27 +76,27 @@ func (h *UserHandler) Login(c echo.Context) error {
 		})
 	}
 
-	// Set access token cookie
+	// Set "access_token" cookie
 	accessCookie := &http.Cookie{
 		Name:     "access_token",
-		Value:    res.AccessToken,
-		Expires:  time.Now().Add(15 * time.Minute),
+		Value:    res.Token,
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 	}
 	c.SetCookie(accessCookie)
 
-	// Set refresh token cookie
-	refreshCookie := &http.Cookie{
-		Name:     "refresh_token",
-		Value:    res.RefreshToken,
-		Expires:  time.Now().Add(7 * 24 * time.Hour),
+	// Also set "token" cookie
+	tokenCookie := &http.Cookie{
+		Name:     "token",
+		Value:    res.Token,
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 	}
-	c.SetCookie(refreshCookie)
+	c.SetCookie(tokenCookie)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"success": true,
@@ -176,16 +154,27 @@ func (h *UserHandler) RefreshToken(c echo.Context) error {
 		})
 	}
 
-	// Set updated access token cookie
+	// Set updated "access_token" cookie
 	accessCookie := &http.Cookie{
 		Name:     "access_token",
 		Value:    token,
-		Expires:  time.Now().Add(15 * time.Minute),
+		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 	}
 	c.SetCookie(accessCookie)
+
+	// Also set updated "token" cookie
+	tokenCookie := &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	}
+	c.SetCookie(tokenCookie)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"success": true,

@@ -14,8 +14,7 @@ type JWTClaims struct {
 }
 
 type JWTService interface {
-	GenerateAccessToken(userID uint, role string) (string, error)
-	GenerateRefreshToken(userID uint, role string) (string, error)
+	GenerateToken(userID uint, role string) (string, error)
 	ValidateToken(tokenStr string) (*JWTClaims, error)
 }
 
@@ -28,27 +27,13 @@ func NewJWTService(secretKey string) JWTService {
 	return &jwtService{secretKey: secretKey}
 }
 
-// GenerateAccessToken generates a short-lived (15 minutes) access token.
-func (j *jwtService) GenerateAccessToken(userID uint, role string) (string, error) {
+// GenerateToken generates a single JWT token containing userID and role, expiring in 24 hours.
+func (j *jwtService) GenerateToken(userID uint, role string) (string, error) {
 	claims := &JWTClaims{
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(j.secretKey))
-}
-
-// GenerateRefreshToken generates a long-lived (7 days) refresh token.
-func (j *jwtService) GenerateRefreshToken(userID uint, role string) (string, error) {
-	claims := &JWTClaims{
-		UserID: userID,
-		Role:   role,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
