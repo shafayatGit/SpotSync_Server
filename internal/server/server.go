@@ -7,6 +7,8 @@ import (
 
 	"spotsync/internal/auth"
 	"spotsync/internal/config"
+	"spotsync/internal/domain/parking_zone"
+	"spotsync/internal/domain/reservation"
 	"spotsync/internal/domain/user"
 
 	"github.com/go-playground/validator/v10"
@@ -55,7 +57,7 @@ func NewServer(cfg *config.Config) *Server {
 
 	// Run migrations
 	log.Println("Running database migrations...")
-	if err := db.AutoMigrate(&user.User{}); err != nil {
+	if err := db.AutoMigrate(&user.User{}, &parking_zone.ParkingZone{}, &reservation.Reservation{}); err != nil {
 		log.Fatalf("Database migration failed: %v", err)
 	}
 	log.Println("Database migrations completed successfully.")
@@ -87,6 +89,7 @@ func NewServer(cfg *config.Config) *Server {
 
 	// 5. Register Routes (Module-level Dependency Injection)
 	user.RegisterRoutes(e, db, jwtService)
+	parking_zone.ParkingZoneRoute(e, db, jwtService)
 
 	return &Server{
 		Echo: e,
