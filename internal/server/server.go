@@ -90,6 +90,7 @@ func NewServer(cfg *config.Config) *Server {
 	// 5. Register Routes (Module-level Dependency Injection)
 	user.RegisterRoutes(e, db, jwtService)
 	parking_zone.ParkingZoneRoute(e, db, jwtService)
+	reservation.ReservationRoute(e, db, jwtService)
 
 	return &Server{
 		Echo: e,

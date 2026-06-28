@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"spotsync/internal/domain/user/dto"
+	"spotsync/internal/httpResponse"
 
 	"github.com/labstack/echo/v4"
 )
@@ -21,25 +22,26 @@ func NewUserHandler(service UserService) *UserHandler {
 func (h *UserHandler) Register(c echo.Context) error {
 	var req dto.RegisterRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Invalid request payload",
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request payload",
+			Details: err.Error(),
 		})
 	}
 
 	if err := c.Validate(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Validation errors",
-			"errors":  err.Error(),
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: "Validation errors",
+			Details: err.Error(),
 		})
 	}
 
 	res, err := h.service.Register(&req)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
 		})
 	}
 
@@ -54,25 +56,26 @@ func (h *UserHandler) Register(c echo.Context) error {
 func (h *UserHandler) Login(c echo.Context) error {
 	var req dto.LoginRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Invalid request payload",
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request payload",
+			Details: err.Error(),
 		})
 	}
 
 	if err := c.Validate(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Validation errors",
-			"errors":  err.Error(),
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: "Validation errors",
+			Details: err.Error(),
 		})
 	}
 
 	res, err := h.service.Login(&req)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
 		})
 	}
 
@@ -110,17 +113,18 @@ func (h *UserHandler) GetMe(c echo.Context) error {
 	userIDVal := c.Get("user_id")
 	userID, ok := userIDVal.(uint)
 	if !ok {
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"success": false,
-			"message": "Unauthorized: user ID not found in context",
+		return c.JSON(http.StatusUnauthorized, httpresponse.Error{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized: user ID not found in context",
 		})
 	}
 
 	res, err := h.service.GetProfile(userID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]interface{}{
-			"success": false,
-			"message": "User profile not found",
+		return c.JSON(http.StatusNotFound, httpresponse.Error{
+			Code:    http.StatusNotFound,
+			Message: "User profile not found",
+			Details: err.Error(),
 		})
 	}
 
@@ -139,18 +143,18 @@ func (h *UserHandler) RefreshToken(c echo.Context) error {
 	userID, ok1 := userIDVal.(uint)
 	role, ok2 := roleVal.(string)
 	if !ok1 || !ok2 {
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"success": false,
-			"message": "Unauthorized: invalid claims in context",
+		return c.JSON(http.StatusUnauthorized, httpresponse.Error{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized: invalid claims in context",
 		})
 	}
 
 	token, err := h.service.RefreshToken(userID, role)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]interface{}{
-			"success": false,
-			"message": "Could not refresh token",
-			"errors":  err.Error(),
+		return c.JSON(http.StatusUnauthorized, httpresponse.Error{
+			Code:    http.StatusUnauthorized,
+			Message: "Could not refresh token",
+			Details: err.Error(),
 		})
 	}
 

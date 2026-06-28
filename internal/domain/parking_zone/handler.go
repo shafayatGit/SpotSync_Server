@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"spotsync/internal/domain/parking_zone/dto"
+	"spotsync/internal/httpResponse"
 
 	"github.com/labstack/echo/v4"
 )
@@ -20,25 +21,26 @@ func NewParkingZoneHandler(service ParkingZoneService) *ParkingZoneHandler {
 func (h *ParkingZoneHandler) CreateZone(c echo.Context) error {
 	var req dto.CreateParkingZoneRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Invalid request payload",
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request payload",
+			Details: err.Error(),
 		})
 	}
 
 	if err := c.Validate(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Validation errors",
-			"errors":  err.Error(),
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: "Validation errors",
+			Details: err.Error(),
 		})
 	}
 
 	res, err := h.service.CreateZone(&req)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
 		})
 	}
 
@@ -52,10 +54,10 @@ func (h *ParkingZoneHandler) CreateZone(c echo.Context) error {
 func (h *ParkingZoneHandler) GetAllZones(c echo.Context) error {
 	res, err := h.service.GetAllZones()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"success": false,
-			"message": "Could not retrieve parking zones",
-			"errors":  err.Error(),
+		return c.JSON(http.StatusInternalServerError, httpresponse.Error{
+			Code:    http.StatusInternalServerError,
+			Message: "Could not retrieve parking zones",
+			Details: err.Error(),
 		})
 	}
 
@@ -70,17 +72,17 @@ func (h *ParkingZoneHandler) GetZoneByID(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"success": false,
-			"message": "Invalid parking zone ID",
+		return c.JSON(http.StatusBadRequest, httpresponse.Error{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid parking zone ID",
 		})
 	}
 
 	res, err := h.service.GetZoneByID(uint(id))
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]interface{}{
-			"success": false,
-			"message": "Parking zone not found",
+		return c.JSON(http.StatusNotFound, httpresponse.Error{
+			Code:    http.StatusNotFound,
+			Message: "Parking zone not found",
 		})
 	}
 
